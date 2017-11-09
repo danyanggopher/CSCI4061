@@ -1,0 +1,45 @@
+Command 0 info: history
+Command 1 info: wc
+Number of commands from input: 2
+
+
+Command: history with PID: 17503 is created
+Command: wc with PID: 17504 is created
+
+
+waiting... Process 17503 finished
+Process id 17503 finished with exit status 256
+
+
+PID: 17503      Command: history      Status: 256
+PID: 17504      Command: wc      Status: 0
+
+
+
+
+Command 0 info: ls -l
+Command 1 info: sort -d
+Command 2 info: wc
+Number of commands from input: 3
+
+
+Command: ls -l with PID: 10765 is created
+Command: sort -d with PID: 10766 is created
+Command: wc with PID: 10767 is created
+
+
+waiting... Process 10765 finished
+Process id 10765 finished with exit status 0
+waiting... Process 10766 finished
+Process id 10766 finished with exit status 0
+waiting... Process 10767 finished
+Process id 10767 finished with exit status 0
+
+
+PID: 10765      Command: ls -l      Status: 0
+PID: 10766      Command: sort -d      Status: 0
+PID: 10767      Command: wc      Status: 0
+
+
+
+
