@@ -53,16 +53,15 @@ void * get_total_size(void* argu){
 			}
 			else{
         pthread_mutex_lock ( &lock);
-        // printf("%s: %d\n",filepathname, statdata.st_size);
+        if(DEBUG){
+          printf("DEBUG: %s %lld\n",filepathname, statdata.st_size);
+        }
 				*t_argu.total_size += statdata.st_size;
         pthread_mutex_unlock ( &lock);
 			}
     }
   }
   pthread_join(t, NULL);
-  if(DEBUG){
-    printf("DEBUG: %s %d\n", ((arg*) argu) -> file_path, *t_argu.total_size);
-  }
   return 0;
 }
 
