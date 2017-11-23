@@ -28,7 +28,9 @@ typedef struct arguments
 *******************************************************************************/
 
 void * get_total_size(void* argu){
-  pthread_t t;
+  int array_size = 10;
+  pthread_t *threads=calloc(array_size, sizeof(pthread_t) );
+  int numofthreads = 0;
   int n;
   arg t_argu;
   t_argu.file_path = ((arg*) argu) -> file_path;
@@ -46,22 +48,32 @@ void * get_total_size(void* argu){
 			stat (filepathname,&statdata);
 			if(S_ISDIR(statdata.st_mode)){
         t_argu.file_path = filepathname;
+        pthread_t t;
         if ( (n = pthread_create(&t, NULL, get_total_size , &t_argu))) {
            fprintf(stderr,"pthread_create :%s\n",strerror(n));
            exit(1);
         }
+        *(threads + numofthreads) = t;
+        numofthreads++;
+        if(array_size<numofthreads){
+          threads = calloc (5, sizeof(pthread_t));
+          array_size += 5;
+        }
 			}
 			else{
         pthread_mutex_lock ( &lock);
-        // printf("%s: %d\n",filepathname, statdata.st_size);
+        if(DEBUG){
+          printf("DEBUG: %s %lld\n",filepathname, statdata.st_size);
+        }
 				*t_argu.total_size += statdata.st_size;
         pthread_mutex_unlock ( &lock);
 			}
     }
   }
-  pthread_join(t, NULL);
-  if(DEBUG){
-    printf("DEBUG: %s %d\n", ((arg*) argu) -> file_path, *t_argu.total_size);
+  if(numofthreads>0){
+    for(int i = 0; i < numofthreads ;i++){
+        pthread_join(*(threads+i), NULL);
+    }
   }
   return 0;
 }
