@@ -62,15 +62,22 @@ void * sumDirectory(void *arg){
           fprintf(stderr, "pthread_create :%s\n",strerror(n));
           exit(1);
         }
-
+        /*
+        pthread_mutex_lock(&lock);
         index_childs++;
         childs[index_childs] = child_thread;
+        pthread_mutex_unlock(&lock);
+        */
         /* After making a recursive call,
           have to join the child threads
         */
+        if (n = pthread_join(child_thread, NULL)){
+          fprintf(stderr, "pthread_join: %s\n", strerror(n));
+          exit(1);
+        }
       }
     }
-    int m;
+    /*int m;
     //printf("index_childs is : %d\n", index_childs);
     for (int i = 0; i<=index_childs;i++){
       if (m = pthread_join(childs[i], NULL)){
@@ -78,6 +85,7 @@ void * sumDirectory(void *arg){
         exit(1);
       }
     }
+    */
     /* Ater the while loop, print out the result of the current directory */
     printf("\n%s: %d\n", (char*) arg, tempsum);
     sum += tempsum;
