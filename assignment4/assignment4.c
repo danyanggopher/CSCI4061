@@ -15,7 +15,6 @@ the size of all the regular files inside that directory and its subdirectories.
 #include <dirent.h>
 
 /* global variables */
-int tempsum = 0;
 int sum = 0;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -32,9 +31,11 @@ void * sumDirectory(void *arg){
     struct dirent *direntry;
 
     /* create an array to store all child_thread */
+    /*
     pthread_t* childs = malloc(256 * sizeof(pthread_t));
     int index_childs = -1;
-
+    */
+    int tempsum = 0;
     dp = opendir((char*) arg);
     while((direntry = readdir(dp)) != NULL) {
       /* construct the fullName */
@@ -47,6 +48,7 @@ void * sumDirectory(void *arg){
         pthread_mutex_lock(&lock);
         int fs = (int) statbuf.st_size;
         tempsum += fs;
+        sum += fs;
         pthread_mutex_unlock(&lock);
       } else {
         /* It's a directory, have to make recursive call */
@@ -62,6 +64,8 @@ void * sumDirectory(void *arg){
           fprintf(stderr, "pthread_create :%s\n",strerror(n));
           exit(1);
         }
+
+        void *subdir_size;
         /*
         pthread_mutex_lock(&lock);
         index_childs++;
@@ -71,10 +75,11 @@ void * sumDirectory(void *arg){
         /* After making a recursive call,
           have to join the child threads
         */
-        if (n = pthread_join(child_thread, NULL)){
+        if (n = pthread_join(child_thread, &subdir_size)){
           fprintf(stderr, "pthread_join: %s\n", strerror(n));
           exit(1);
         }
+        tempsum += (int)subdir_size;
       }
     }
     /*int m;
@@ -88,8 +93,7 @@ void * sumDirectory(void *arg){
     */
     /* Ater the while loop, print out the result of the current directory */
     printf("\n%s: %d\n", (char*) arg, tempsum);
-    sum += tempsum;
-    tempsum = 0;
+    return (void *)tempsum;
 
 }
 
