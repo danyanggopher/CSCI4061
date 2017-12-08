@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <pthread.h>
 
 #define BUFFER_SIZE 1024
 
@@ -60,7 +61,7 @@ QUOTE_FILE* readfile(FILE * fp, int* num_catg) {
   char str[60];
   QUOTE_FILE * qf = malloc(2 * sizeof(QUOTE_FILE));
   for (int i = 0; fgets(str, 60, fp) != NULL ;i++) {
-    if (i = num) {
+    if (i == num) {
       // qf = calloc(1, sizeof(QUOTE_FILE));
       qf = realloc(qf, (num+1) * sizeof(QUOTE_FILE));
       if (qf == NULL) {
@@ -113,7 +114,7 @@ int pickquote(char* buffer, QUOTE_FILE* qf, char* response, int num_catg) {
   char str[BUFFER_SIZE];
   sscanf(buffer,"GET: QUOTE CAT: %s\n",str);
   if (strcmp(str, "ANY") == 0) {
-    sprintf(response,"%s\n",get_quote(rand()%num_catg, qf));
+    sprintf(response,"%s",get_quote(rand()%num_catg, qf));
     // printf("%s\n",response );
     return 1;
   } else {
@@ -139,7 +140,7 @@ void *handle_request(void * arg){
         get_in_addr((struct sockaddr *)&client_sock->sock_addr),
         s, sizeof s);
     QUOTE_FILE * qfs = readfile(fopen(client_sock->config_file, "r"), &num_catg);
-    printf("%d: got connection from %s\n", pthread_self(),s);
+    printf("%d: got connection from %s\n", (int) pthread_self(),s);
     while(1){
       if ((rval = recv(client_sock->sock_fd, &buffer, sizeof(buffer),0)) < 0){
         perror("Reading stream message");
@@ -162,12 +163,13 @@ void *handle_request(void * arg){
     close(client_sock->sock_fd);
     free(client_sock);
     pthread_exit(0);
+    return 0;
 }
 
 int main(int argc, char **argv)
 {
     int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
-    struct addrinfo hints, *servinfo, *p;
+    struct addrinfo server, *servinfo, *p;
     struct sockaddr_storage their_addr; // connector's address information
     socklen_t sin_size;
     struct sigaction sa;
@@ -179,12 +181,12 @@ int main(int argc, char **argv)
 
     pthread_t th;
 
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE; // use my IP
+    memset(&server, 0, sizeof server);
+    server.ai_family = AF_UNSPEC;
+    server.ai_socktype = SOCK_STREAM;
+    server.ai_flags = AI_PASSIVE; // use my IP
 
-    if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {
+    if ((rv = getaddrinfo(NULL, PORT, &server, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;
     }
@@ -235,31 +237,36 @@ int main(int argc, char **argv)
     printf("server: waiting for connections...\n");
 
     while(1) {  // main accept() loop
-        sin_size = sizeof their_addr;
-	FD_ZERO(&rfds);
-	FD_SET(sockfd,&rfds);
-	tv.tv_sec=5;
-	tv.tv_usec=0;
+      sin_size = sizeof their_addr;
+    	FD_ZERO(&rfds);
+    	FD_SET(sockfd,&rfds);
+    	tv.tv_sec=5;
+    	tv.tv_usec=0;
 
-	retval = select(sockfd+1,&rfds,NULL,NULL,&tv);
+    	retval = select(sockfd+1,&rfds,NULL,NULL,&tv);
 
-	if(retval){
-		printf("New connection...\n");
-	        new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
+    	if(retval){
+    		printf("New connection...\n");
+    	        new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
 
-    		if (new_fd == -1) {
-        	    perror("accept");
-            	    continue;
-        	}
+        		if (new_fd == -1) {
+            	    perror("accept");
+                	    continue;
+            	}
 
-		client_sock_context* client_sock = (client_sock_context*) malloc(sizeof(client_sock_context));
-		client_sock->sock_fd = new_fd;
-		client_sock->sock_addr = their_addr;
-    client_sock->config_file = argv[1];
+    		client_sock_context* client_sock = (client_sock_context*) malloc(sizeof(client_sock_context));
+    		client_sock->sock_fd = new_fd;
+    		client_sock->sock_addr = their_addr;
+        client_sock->config_file = argv[1];
 
-		//create a new thread to handle this request
-		//logic for child is present in handle_request() function defined above
-		pthread_create(&th,NULL,handle_request,client_sock);
+        pthread_attr_t attr;
+        if ((rv = pthread_attr_init(&attr))) {
+          fprintf(stderr,"pthread_init_err: %s\n",strerror(rv));
+          exit(1);
+        }
+        pthread_attr_setscope( &attr,  PTHREAD_SCOPE_SYSTEM);
+        pthread_attr_setdetachstate( &attr,  PTHREAD_CREATE_DETACHED);
+    		pthread_create(&th, &attr, handle_request, client_sock);
     	}
     	else{
 		printf("No connection request...timeout..set timer again..\n");
