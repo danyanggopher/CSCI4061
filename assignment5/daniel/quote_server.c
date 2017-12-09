@@ -69,25 +69,60 @@ void * select_quote(void *arg) {
       char buf[BUFFER_SIZE];
       char buf_next[BUFFER_SIZE];
 
+      char buf_list[BUFFER_SIZE];
+      char buf_next_list[BUFFER_SIZE];
+
+      int entered = 0;
+
       if (strcmp(req, "BYE") == 0) {
         finished = 1;
-      } else if (strcmp(req, "GET: QUOTE CAT: ANY\n") == 0) {
+        entered = 1;
+      }
+      if (strcmp(req, "GET: QUOTE CAT: ANY\n") == 0) {
         /* get a random quote from random file */
-      } else if (strcmp(req, "GET: QUOTE CAT: Computers\n") == 0) {
+        int r = (rand() % 3) + 1; // a number from 1 to 100
+        if (r == 1){
+          strcpy(req, "GET: QUOTE CAT: Computers\n");
+        } else if (r == 2) {
+          strcpy(req, "GET: QUOTE CAT: Einstein\n");
+        } else if (r == 3) {
+          strcpy(req, "GET: QUOTE CAT: Twain\n");
+        }
+        entered = 1;
+      }
+      if (strcmp(req, "GET: LIST\n") == 0) {
+        /* get the list of the files */
+        printf("\nentered here\n");
+        while (fgets(buf_next_list, BUFFER_SIZE, config_file_d)) {
+          sprintf(buf_list, "%s%s", buf_list, buf_next_list);
+        }
+        strcpy(response, buf_list);
+        entered = 1;
+      }
+      if (strcmp(req, "GET: QUOTE CAT: Computers\n") == 0) {
+        /* get two lines of quote, use two buf */
         fgets(buf, BUFFER_SIZE, computer_file);
         fgets(buf_next, BUFFER_SIZE, computer_file);
-      } else if (strcmp(req, "GET: QUOTE CAT: Einstein\n") == 0) {
+        sprintf(response, "%s%s", buf, buf_next);
+        entered = 1;
+      }
+      if (strcmp(req, "GET: QUOTE CAT: Einstein\n") == 0) {
         fgets(buf, BUFFER_SIZE, einstein_file);
         fgets(buf_next, BUFFER_SIZE, einstein_file);
-      } else if (strcmp(req, "GET: QUOTE CAT: Twain\n") == 0) {
+        sprintf(response, "%s%s", buf, buf_next);
+        entered = 1;
+      }
+      if (strcmp(req, "GET: QUOTE CAT: Twain\n") == 0) {
         fgets(buf, BUFFER_SIZE, twain_file);
         fgets(buf_next, BUFFER_SIZE, twain_file);
-      } else {
+        sprintf(response, "%s%s", buf, buf_next);
+        entered = 1;
+      }
+      if (entered == 0){
         printf("invalid request\n");
       }
 
       /* send response */
-      sprintf(response, "%s%s", buf, buf_next);
       if (send(cas->msgsock_, &response, sizeof(response), 0) < 0) {
         pdie("Writing on stream socket");
       }
