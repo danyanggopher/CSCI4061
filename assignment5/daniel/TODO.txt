@@ -1,0 +1,2 @@
+1. complete the request_type struct (Or probably they are just char*)
+2. file I/O take out the contents from config.txt
