@@ -1,0 +1,11 @@
+{
+  "name": "wang6132_hw05",
+  "version": "1.0.0",
+  "description": "Assignment 5",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "wang6132",
+  "license": "ISC"
+}
